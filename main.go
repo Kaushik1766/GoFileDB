@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"sync"
 
 	"github.com/Kaushik1766/GoFileDB/utils"
 )
@@ -17,17 +18,23 @@ type Entity interface {
 type Repository[T Entity] interface {
 	// Save persist data to db, overwrite if pk already present
 	Save(T) error
-	// GetByParameter get top value given the required parameter map
-	GetByUniqueParameter(map[string]any) (T, error)
 	// GetByParameter get list of matching values given parameter map
 	GetByParameter(map[string]any) ([]T, error)
 	// DeleteByParameter delete all matching records given parameter map
 	DeleteByParameter(map[string]any) error
 }
 
-type FileDBRepository[T Entity] struct{}
+type FileDBRepository[T Entity] struct {
+	mu *sync.Mutex
+}
+
+func NewFileDBRepository[T Entity]() *FileDBRepository[T] {
+	return &FileDBRepository[T]{mu: &sync.Mutex{}}
+}
 
 func (db *FileDBRepository[T]) Save(data T) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
 	typ := reflect.TypeOf(data).Name()
 	fileName := fmt.Sprintf("%v.json", typ)
 
@@ -70,6 +77,88 @@ func (db *FileDBRepository[T]) Save(data T) error {
 	return err
 }
 
+func (db *FileDBRepository[T]) GetByParameter(params map[string]any) ([]T, error) {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+	var result []T
+	var tmp T
+
+	typ := reflect.TypeOf(tmp).Name()
+	fileName := fmt.Sprintf("%v.json", typ)
+
+	if exists := utils.FileExists(fileName); !exists {
+		return result, fmt.Errorf("file not found")
+	}
+
+	data, err := os.ReadFile(fileName)
+	if err != nil {
+		return nil, err
+	}
+
+	var dbData []T
+	err = json.Unmarshal(data, &dbData)
+
+	if err != nil {
+		return nil, err
+	}
+
+	for _, val := range dbData {
+		v := reflect.ValueOf(val)
+		for key := range params {
+			dbVal := v.FieldByName(key).Interface()
+			if dbVal == params[key] {
+				result = append(result, val)
+			}
+		}
+	}
+	return result, nil
+}
+
+func (db *FileDBRepository[T]) DeleteByParameter(params map[string]any) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+	var result []T
+	var tmp T
+
+	typ := reflect.TypeOf(tmp).Name()
+	fileName := fmt.Sprintf("%v.json", typ)
+
+	if exists := utils.FileExists(fileName); !exists {
+		return fmt.Errorf("file not found")
+	}
+
+	data, err := os.ReadFile(fileName)
+	if err != nil {
+		return err
+	}
+
+	var dbData []T
+	err = json.Unmarshal(data, &dbData)
+
+	if err != nil {
+		return err
+	}
+
+	for _, val := range dbData {
+		v := reflect.ValueOf(val)
+		for key := range params {
+			dbVal := v.FieldByName(key).Interface()
+			if dbVal != params[key] {
+				result = append(result, val)
+			}
+		}
+	}
+
+	updatedData, err := json.Marshal(result)
+
+	if err != nil {
+		return err
+	}
+
+	os.WriteFile(fileName, updatedData, 0666)
+	return nil
+}
+
 type User struct {
 	Id   string
 	Name string
@@ -81,6 +170,9 @@ func (u User) GetID() string {
 }
 
 func main() {
-	db := FileDBRepository[User]{}
-	db.Save(User{"adsfaddsdf", "kaushik", 41})
+	var db Repository[User] = NewFileDBRepository[User]()
+	db.Save(User{"adsfaddssdf", "kaushik", 41})
+	fmt.Println(db.GetByParameter(map[string]any{"Age": 41}))
+	db.DeleteByParameter(map[string]any{"Age": 41})
+	fmt.Println(db.GetByParameter(map[string]any{}))
 }
