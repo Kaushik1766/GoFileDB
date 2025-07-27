@@ -16,11 +16,8 @@ type Entity interface {
 }
 
 type Repository[T Entity] interface {
-	// Save persist data to db, overwrite if pk already present
 	Save(T) error
-	// GetByParameter get list of matching values given parameter map
 	GetByParameter(map[string]any) ([]T, error)
-	// DeleteByParameter delete all matching records given parameter map
 	DeleteByParameter(map[string]any) error
 }
 
@@ -32,6 +29,7 @@ func NewFileDBRepository[T Entity]() *FileDBRepository[T] {
 	return &FileDBRepository[T]{mu: &sync.Mutex{}}
 }
 
+// Save persist data to db, overwrite if pk already present
 func (db *FileDBRepository[T]) Save(data T) error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
@@ -77,6 +75,7 @@ func (db *FileDBRepository[T]) Save(data T) error {
 	return err
 }
 
+// GetByParameter get list of matching values given parameter map
 func (db *FileDBRepository[T]) GetByParameter(params map[string]any) ([]T, error) {
 	db.mu.Lock()
 	defer db.mu.Unlock()
@@ -114,6 +113,7 @@ func (db *FileDBRepository[T]) GetByParameter(params map[string]any) ([]T, error
 	return result, nil
 }
 
+// DeleteByParameter delete all matching records given parameter map
 func (db *FileDBRepository[T]) DeleteByParameter(params map[string]any) error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
