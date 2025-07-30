@@ -22,4 +22,5 @@ func main() {
 	// fmt.Println(db.GetByParameter(map[string]any{"Age": 41}))
 	// db.DeleteByParameter(map[string]any{"Age": 41})
 	fmt.Println(db.GetByParameter(map[string]any{}))
+	fmt.Println(db.GetAll())
 }

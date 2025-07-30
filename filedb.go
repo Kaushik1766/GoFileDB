@@ -18,6 +18,7 @@ type Entity interface {
 type Repository[T Entity] interface {
 	Save(T) error
 	GetByParameter(map[string]any) ([]T, error)
+	GetAll() ([]T, error)
 	DeleteByParameter(map[string]any) error
 }
 
@@ -153,4 +154,31 @@ func (db *FileDBRepository[T]) DeleteByParameter(params map[string]any) error {
 
 	os.WriteFile(fileName, updatedData, 0666)
 	return nil
+}
+
+// GetAll retrieves all entries in the file
+func (db *FileDBRepository[T]) GetAll() ([]T, error) {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+	var result []T
+	var tmp T
+
+	typ := reflect.TypeOf(tmp).Name()
+	fileName := fmt.Sprintf("%v.json", typ)
+
+	if exists := utils.FileExists(fileName); !exists {
+		return result, fmt.Errorf("file not found")
+	}
+
+	data, err := os.ReadFile(fileName)
+	if err != nil {
+		return nil, err
+	}
+
+	err = json.Unmarshal(data, &result)
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
 }
