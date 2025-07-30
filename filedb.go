@@ -8,7 +8,7 @@ import (
 	"reflect"
 	"sync"
 
-	"github.com/Kaushik1766/GoFileDB/utils"
+	"github.com/Kaushik1766/GoFileDB/internal/utils"
 )
 
 type Entity interface {
@@ -153,22 +153,4 @@ func (db *FileDBRepository[T]) DeleteByParameter(params map[string]any) error {
 
 	os.WriteFile(fileName, updatedData, 0666)
 	return nil
-}
-
-type User struct {
-	Id   string
-	Name string
-	Age  int
-}
-
-func (u User) GetID() string {
-	return u.Id
-}
-
-func main() {
-	var db Repository[User] = NewFileDBRepository[User]()
-	db.Save(User{"adsfaddssdf", "kaushik", 41})
-	fmt.Println(db.GetByParameter(map[string]any{"Age": 41}))
-	db.DeleteByParameter(map[string]any{"Age": 41})
-	fmt.Println(db.GetByParameter(map[string]any{}))
 }
