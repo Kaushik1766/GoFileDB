@@ -1,5 +1,5 @@
 // Package gofiledb provides interface implementation for a filedb
-package main
+package gofiledb
 
 import (
 	"encoding/json"
@@ -45,7 +45,6 @@ func (db *FileDBRepository[T]) Save(data T) error {
 	}
 
 	prevDataBytes, err := os.ReadFile(fileName)
-
 	if err != nil {
 		return err
 	}
@@ -96,7 +95,6 @@ func (db *FileDBRepository[T]) GetByParameter(params map[string]any) ([]T, error
 
 	var dbData []T
 	err = json.Unmarshal(data, &dbData)
-
 	if err != nil {
 		return nil, err
 	}
@@ -134,7 +132,6 @@ func (db *FileDBRepository[T]) DeleteByParameter(params map[string]any) error {
 
 	var dbData []T
 	err = json.Unmarshal(data, &dbData)
-
 	if err != nil {
 		return err
 	}
@@ -150,7 +147,6 @@ func (db *FileDBRepository[T]) DeleteByParameter(params map[string]any) error {
 	}
 
 	updatedData, err := json.Marshal(result)
-
 	if err != nil {
 		return err
 	}
